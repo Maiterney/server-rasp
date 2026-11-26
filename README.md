@@ -65,6 +65,25 @@ docker compose -f /srv/apps/minha-api/docker-compose.yml up -d
 
 O app aparece no CasaOS junto dos outros containers.
 
+## App sem GitHub (envio direto do PC)
+
+Para apps cujo código ainda não está no GitHub com o workflow, rode **no PC**:
+
+```bash
+./scripts/deploy-do-pc.sh <pasta-com-Dockerfile> <nome-do-app>
+```
+
+O script copia o código para a Pi, gera a imagem lá (`<nome>:local`) e recria o container.
+Antes, o app precisa existir em `/srv/apps/<nome>/` (compose + `.env`).
+
+## Apps instalados
+
+| App | Porta | Onde | Atualizar |
+|---|---|---|---|
+| lanche-pdv-server (backend do Lanche PDV e do Sobrou!) | 3000 · `/admin` | `stacks/apps/lanche-pdv-server/` → `/srv/apps/lanche-pdv-server/`, dados em `/srv/data/lanche-pdv/` | `./scripts/deploy-do-pc.sh ../lanche-pdv/server lanche-pdv-server` |
+
+> Imagens Node com `node:sqlite` devem usar `node:24-slim`. Na Pi 3, a variante `-alpine` morre com SIGBUS.
+
 ## Atualizar apps
 
 - **Automático:** depois de um push na `main`, o GitHub Actions gera a imagem nova e o Watchtower aplica em até 5 minutos.

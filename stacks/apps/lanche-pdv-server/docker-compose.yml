@@ -1,0 +1,28 @@
+# Backend do Lanche PDV e do Sobrou! (código em lanche-pdv/server).
+# Na Pi fica em /srv/apps/lanche-pdv-server/ com um .env ao lado (ver .env.example).
+name: lanche-pdv-server
+
+services:
+  app:
+    # Hoje: imagem gerada na própria Pi (docker build -t lanche-pdv-server:local).
+    # Quando o código estiver no GitHub com o workflow, troque para
+    # ghcr.io/maiterney/lanche-pdv-server:latest e ligue o label do Watchtower.
+    image: ${IMAGE:-lanche-pdv-server:local}
+    container_name: lanche-pdv-server
+    env_file: .env
+    environment:
+      PORT: "3000"
+      DATA_DIR: /data
+    volumes:
+      - ${DATA_DIR:-/srv/data}/lanche-pdv:/data   # servidor.db, data.key, backup/, releases/
+    ports:
+      - "3000:3000"
+    networks: [infra]
+    labels:
+      com.centurylinklabs.watchtower.enable: "${WATCHTOWER:-false}"
+    mem_limit: 192m
+    restart: unless-stopped
+
+networks:
+  infra:
+    external: true
