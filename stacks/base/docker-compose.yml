@@ -71,7 +71,7 @@ services:
       WATCHTOWER_POLL_INTERVAL: ${WATCHTOWER_POLL_INTERVAL:-300}
       WATCHTOWER_CLEANUP: "true"
       WATCHTOWER_INCLUDE_RESTARTING: "true"
-      # API para disparar update manual: curl -H "Authorization: Bearer $TOKEN" http://<pi>:8082/v1/update
+      # API para disparar update manual: curl -X POST -H "Authorization: Bearer $TOKEN" http://<pi>:8082/v1/update
       WATCHTOWER_HTTP_API_UPDATE: "true"
       WATCHTOWER_HTTP_API_PERIODIC_POLLS: "true"
       WATCHTOWER_HTTP_API_TOKEN: ${WATCHTOWER_TOKEN:?defina WATCHTOWER_TOKEN no .env}

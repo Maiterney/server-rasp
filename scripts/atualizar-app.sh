@@ -10,7 +10,7 @@ alvo="${1:?nome do app ou --todos}"
 
 if [[ "$alvo" == "--todos" ]]; then
   token="$(grep -E '^WATCHTOWER_TOKEN=' "$REPO_DIR/stacks/base/.env" | cut -d= -f2-)"
-  curl -fsS -H "Authorization: Bearer $token" http://localhost:8082/v1/update
+  curl -fsS -X POST -H "Authorization: Bearer $token" http://localhost:8082/v1/update
   echo "Watchtower disparado. Acompanhe: docker logs -f watchtower"
   exit 0
 fi

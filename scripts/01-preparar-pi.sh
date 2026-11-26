@@ -58,6 +58,7 @@ fi
 
 echo "==> Diretórios de dados"
 mkdir -p "$DATA_DIR"/{tailscale,postgres,backups,uptime-kuma} "$APPS_DIR"
+[[ -n "${SUDO_USER:-}" ]] && chown "$SUDO_USER": "$APPS_DIR"   # apps sem sudo
 if ! findmnt -n "$DATA_DIR" >/dev/null && ! findmnt -n "$(dirname "$DATA_DIR")" >/dev/null; then
   echo "AVISO: $DATA_DIR está no cartão SD. Recomendo montar um SSD USB nele (ver README)."
 fi
