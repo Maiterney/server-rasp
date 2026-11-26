@@ -1,0 +1,15 @@
+# Papel definitivo da Pi 3 (Fase 2): vigiar o servidor principal.
+# Já pode rodar na Fase 1 para monitorar os próprios apps.
+# Subir:  docker compose -f stacks/aux/docker-compose.yml up -d
+name: aux
+
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    volumes:
+      - ${DATA_DIR:-/srv/data}/uptime-kuma:/app/data
+    ports:
+      - "3001:3001"
+    mem_limit: 160m
+    restart: unless-stopped

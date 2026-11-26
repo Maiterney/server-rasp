@@ -1,0 +1,19 @@
+# Modelo de app. O scripts/novo-app.sh copia para $APPS_DIR/<nome>/ e troca os __MARCADORES__.
+name: __NOME__
+
+services:
+  app:
+    image: __IMAGEM__
+    container_name: __NOME__
+    env_file: .env
+    ports:
+      - "__PORTA__:__PORTA_INTERNA__"
+    networks: [infra]
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"   # tire para atualizar só manualmente
+    mem_limit: __MEM__
+    restart: unless-stopped
+
+networks:
+  infra:
+    external: true

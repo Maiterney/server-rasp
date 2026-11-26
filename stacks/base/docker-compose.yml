@@ -1,0 +1,92 @@
+# Stack base do servidor: acesso (Tailscale), banco compartilhado, admin do banco e atualizador.
+# Subir:  docker compose -f stacks/base/docker-compose.yml --env-file stacks/base/.env up -d
+name: base
+
+services:
+  tailscale:
+    image: tailscale/tailscale:stable
+    container_name: tailscale
+    network_mode: host          # expõe o painel e todas as portas do host na tailnet
+    cap_add: [NET_ADMIN, NET_RAW]
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:-}
+      TS_HOSTNAME: ${TS_HOSTNAME:-raspberry-pi}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "false"
+      TS_EXTRA_ARGS: ${TS_EXTRA_ARGS:-}
+    volumes:
+      - ${DATA_DIR:-/srv/data}/tailscale:/var/lib/tailscale
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${PG_ADMIN_USER:-admin}
+      POSTGRES_PASSWORD: ${PG_ADMIN_PASSWORD:?defina PG_ADMIN_PASSWORD no .env}
+      TZ: ${TZ:-America/Sao_Paulo}
+    # Ajustado para pouca RAM (Pi 3). No mini PC, pode aumentar.
+    command: >
+      postgres
+      -c shared_buffers=${PG_SHARED_BUFFERS:-64MB}
+      -c effective_cache_size=192MB
+      -c work_mem=2MB
+      -c maintenance_work_mem=32MB
+      -c max_connections=40
+    volumes:
+      - ${DATA_DIR:-/srv/data}/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"             # LAN + Tailscale; não faça port forward no roteador
+    networks: [infra]
+    mem_limit: ${PG_MEM_LIMIT:-256m}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_ADMIN_USER:-admin}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:4
+    container_name: adminer
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - "8081:8080"
+    networks: [infra]
+    mem_limit: 64m
+    depends_on: [postgres]
+    restart: unless-stopped
+
+  # Atualiza apps com o label com.centurylinklabs.watchtower.enable=true
+  # quando sai imagem nova no registry. Fork mantido do containrrr/watchtower.
+  watchtower:
+    image: nickfedor/watchtower:latest
+    container_name: watchtower
+    environment:
+      TZ: ${TZ:-America/Sao_Paulo}
+      WATCHTOWER_LABEL_ENABLE: "true"
+      WATCHTOWER_POLL_INTERVAL: ${WATCHTOWER_POLL_INTERVAL:-300}
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_INCLUDE_RESTARTING: "true"
+      # API para disparar update manual: curl -H "Authorization: Bearer $TOKEN" http://<pi>:8082/v1/update
+      WATCHTOWER_HTTP_API_UPDATE: "true"
+      WATCHTOWER_HTTP_API_PERIODIC_POLLS: "true"
+      WATCHTOWER_HTTP_API_TOKEN: ${WATCHTOWER_TOKEN:?defina WATCHTOWER_TOKEN no .env}
+      # Imagens privadas no GHCR (PAT com read:packages)
+      REPO_USER: ${GHCR_USER:-}
+      REPO_PASS: ${GHCR_TOKEN:-}
+      # Notificação opcional (ex.: telegram://TOKEN@telegram?chats=ID)
+      WATCHTOWER_NOTIFICATION_URL: ${WATCHTOWER_NOTIFICATION_URL:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8082:8080"
+    mem_limit: 64m
+    restart: unless-stopped
+
+networks:
+  infra:
+    name: infra                 # apps entram nesta rede para achar o "postgres"
